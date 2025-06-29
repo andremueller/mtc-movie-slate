@@ -34,8 +34,8 @@ class OSCSenderApp(tk.Tk):
 
         # --- Window Configuration ---
         self.title("OSC Take Sender")
-        self.geometry("450x350")  # Set a default size
-        self.resizable(False, False)
+        self.geometry("450x450")  # Set a default size
+        self.resizable(True, True)
 
         # --- Style Configuration ---
         self.style = ttk.Style(self)
@@ -44,7 +44,7 @@ class OSCSenderApp(tk.Tk):
         # --- Tkinter Data Variables ---
         # These variables link the GUI widgets to the underlying data.
         self.ip_var = tk.StringVar(value="127.0.0.1")
-        self.port_var = tk.StringVar(value="9000")
+        self.port_var = tk.StringVar(value="8000")
         self.production_var = tk.StringVar(value="My Production")
         self.part_var = tk.StringVar(value="Part 1")
         self.take_var = tk.IntVar(value=1)
@@ -56,6 +56,8 @@ class OSCSenderApp(tk.Tk):
 
         # --- Initialize the UI ---
         self.create_widgets()
+        
+        self.send_osc_message()
 
     def create_widgets(self):
         """
@@ -92,13 +94,25 @@ class OSCSenderApp(tk.Tk):
         ttk.Label(info_frame, text="Production Name:").grid(
             row=0, column=0, padx=5, pady=5, sticky=tk.W
         )
-        prod_entry = ttk.Entry(info_frame, textvariable=self.production_var, width=30)
+        prod_entry = ttk.Entry(
+            info_frame,
+            textvariable=self.production_var,
+            width=30,
+            validate="focusout",
+            validatecommand=self.send_osc_message
+        )
         prod_entry.grid(row=0, column=1, padx=5, pady=5, sticky=tk.W)
 
         ttk.Label(info_frame, text="Part Name:").grid(
             row=1, column=0, padx=5, pady=5, sticky=tk.W
         )
-        part_entry = ttk.Entry(info_frame, textvariable=self.part_var, width=30)
+        part_entry = ttk.Entry(
+            info_frame,
+            textvariable=self.part_var,
+            width=30,
+            validate="focusout",
+            validatecommand=self.send_osc_message
+        )
         part_entry.grid(row=1, column=1, padx=5, pady=5, sticky=tk.W)
 
         # --- Take Control Section ---
@@ -108,7 +122,9 @@ class OSCSenderApp(tk.Tk):
         ttk.Label(take_frame, text="Take Number:").pack(side=tk.LEFT, padx=5)
 
         take_entry = ttk.Entry(
-            take_frame, textvariable=self.take_var, width=5, justify=tk.CENTER
+            take_frame, textvariable=self.take_var, width=5, justify=tk.CENTER,
+            validate="focusout",
+            validatecommand=self.send_osc_message
         )
         take_entry.pack(side=tk.LEFT, padx=5)
 
@@ -118,18 +134,16 @@ class OSCSenderApp(tk.Tk):
         inc_button.pack(side=tk.LEFT)
 
         reset_button = ttk.Button(take_frame, text="Reset", command=self.reset_take)
-        reset_button.pack(side=tk.LEFT, padx=5)
+        reset_button.pack(side=tk.LEFT, padx=5, fill=tk.X)
 
         # --- Action Button ---
         send_button = ttk.Button(
-            main_frame,
-            text="Send OSC Message",
-            command=self.send_osc_message,
-            style="Accent.TButton",
+            main_frame, text="Send OSC Message", command=self.send_osc_message
         )
-        reset_button.pack(side=tk.BOTTOM, padx=5)
-        self.style.configure("Accent.TButton", font=("Helvetica", 12, "bold"))
-        send_button.pack(fill=tk.X, ipady=5, pady=10)
+        send_button.pack(side=tk.BOTTOM, fill=tk.X)
+        # , ipady=5, pady=10)
+        # style="Accent.TButton",
+        # self.style.configure("Accent.TButton", font=("Helvetica", 12, "bold"))
 
         # --- Status Bar ---
         status_bar = ttk.Label(
