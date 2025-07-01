@@ -1,6 +1,9 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 import sys
+import threading
+import time
+import socket
 
 # --- Installation Check ---
 # Try to import the required library and provide a helpful message if it's missing.
@@ -22,6 +25,46 @@ except ImportError:
         "The 'python-osc' library is not installed.\n\nPlease run 'pip install python-osc' in your terminal and then restart the application.",
     )
     sys.exit(1)  # Exit the script
+
+try:
+    from zeroconf import ServiceBrowser, Zeroconf, ServiceListener
+except ImportError:
+    root = tk.Tk()
+    root.withdraw()
+    messagebox.showerror(
+        "Missing Library",
+        "The 'zeroconf' library is not installed.\n\nPlease run 'pip install zeroconf' in your terminal and then restart the application."
+    )
+    sys.exit(1)
+
+
+class TouchOSCListener(ServiceListener):
+    """
+    A listener for Zeroconf that collects information about TouchOSC services.
+    It looks for services of type '_osc._tcp.local.'.
+    """
+    def __init__(self):
+        super().__init__()
+        self.services = []
+
+    def add_service(self, zc: Zeroconf, type_: str, name: str) -> None:
+        """Called by Zeroconf when a new service is discovered."""
+        info = zc.get_service_info(type_, name)
+        if info:
+            # Decode address and get port
+            address = socket.inet_ntoa(info.addresses[0])
+            port = info.port
+            # Store the service info
+            self.services.append({"name": info.server, "address": address, "port": port})
+            print(f"Discovered TouchOSC service: {info.server} at {address}:{port}")
+
+    def update_service(self, zc: Zeroconf, type_: str, name: str) -> None:
+        """Called when a service is updated (we don't need to act on this)."""
+        pass
+
+    def remove_service(self, zc: Zeroconf, type_: str, name: str) -> None:
+        """Called when a service is removed."""
+        print(f"Service {name} removed")
 
 
 class OSCSenderApp(tk.Tk):
@@ -72,6 +115,7 @@ class OSCSenderApp(tk.Tk):
             main_frame, text="OSC Target Configuration", padding="10"
         )
         config_frame.pack(fill=tk.X, pady=(0, 10))
+        config_frame.columnconfigure(1, weight=1)
 
         ttk.Label(config_frame, text="Target IP:").grid(
             row=0, column=0, padx=5, pady=5, sticky=tk.W
@@ -84,6 +128,10 @@ class OSCSenderApp(tk.Tk):
         )
         port_entry = ttk.Entry(config_frame, textvariable=self.port_var, width=10)
         port_entry.grid(row=1, column=1, padx=5, pady=5, sticky=tk.W)
+
+        # --- Discovery Button ---
+        self.discover_button = ttk.Button(config_frame, text="Discover...", command=self.start_discovery)
+        self.discover_button.grid(row=0, column=2, rowspan=2, padx=(10, 5), pady=5, sticky='ns')
 
         # --- Production Info Section ---
         info_frame = ttk.LabelFrame(
@@ -151,6 +199,79 @@ class OSCSenderApp(tk.Tk):
         )
         status_bar.pack(side=tk.BOTTOM, fill=tk.X)
 
+    def start_discovery(self):
+        """Starts the network discovery process in a separate thread."""
+        self.discover_button.config(state=tk.DISABLED)
+        self.status_var.set("Discovering services...")
+        # Run discovery in a thread to not freeze the GUI
+        discovery_thread = threading.Thread(target=self.run_discovery, daemon=True)
+        discovery_thread.start()
+
+    def run_discovery(self):
+        """The core discovery logic that runs in a background thread."""
+        zeroconf = Zeroconf()
+        listener = TouchOSCListener()
+        browser = ServiceBrowser(zeroconf, "_osc._tcp.local.", listener)
+        
+        # Wait for a few seconds to find services
+        time.sleep(3)
+        zeroconf.close()
+        
+        # Schedule the result handling back on the main GUI thread
+        self.after(0, self.handle_discovery_results, listener.services)
+
+    def handle_discovery_results(self, services):
+        """Processes the list of discovered services in the main GUI thread."""
+        self.discover_button.config(state=tk.NORMAL)
+        if not services:
+            self.status_var.set("Discovery finished. No services found.")
+            messagebox.showinfo("Discovery", "No TouchOSC services were found on the network.")
+        elif len(services) == 1:
+            service = services[0]
+            self.ip_var.set(service['address'])
+            self.port_var.set(service['port'])
+            self.status_var.set(f"Set target to {service['name'].replace('.local.', '')}")
+        else:
+            # If multiple services are found, show a selection dialog
+            self.show_selection_dialog(services)
+
+    def show_selection_dialog(self, services):
+        """Creates a Toplevel window to let the user choose a service."""
+        dialog = tk.Toplevel(self)
+        dialog.title("Select a Device")
+        dialog.geometry("300x200")
+        dialog.resizable(False, False)
+        dialog.transient(self) # Keep dialog on top of the main window
+        
+        ttk.Label(dialog, text="Multiple devices found. Please choose one:").pack(pady=10)
+        
+        listbox = tk.Listbox(dialog, height=5)
+        listbox.pack(padx=10, pady=5, fill=tk.X)
+        
+        for service in services:
+            # Display a user-friendly name
+            display_name = service['name'].replace('.local.', '')
+            listbox.insert(tk.END, display_name)
+
+        def on_select():
+            selection_index = listbox.curselection()
+            if selection_index:
+                selected_service = services[selection_index[0]]
+                self.ip_var.set(selected_service['address'])
+                self.port_var.set(selected_service['port'])
+                self.status_var.set(f"Set target to {selected_service['name'].replace('.local.', '')}")
+                dialog.destroy()
+
+        select_button = ttk.Button(dialog, text="Select", command=on_select)
+        select_button.pack(pady=10)
+        
+        # Center the dialog
+        dialog.update_idletasks()
+        x = self.winfo_x() + (self.winfo_width() // 2) - (dialog.winfo_width() // 2)
+        y = self.winfo_y() + (self.winfo_height() // 2) - (dialog.winfo_height() // 2)
+        dialog.geometry(f"+{x}+{y}")
+        dialog.grab_set() # Modal behavior
+        
     def increment_take(self):
         """Increments the take number by 1."""
         self.take_var.set(self.take_var.get() + 1)
