@@ -26,3 +26,16 @@ F0 7F 7F 06 44 06 01 21 00 06 00 00 F7
 RECEIVE    | ENDPOINT(TouchOSC) TYPE(NOTE_ON) CHANNEL(2) DATA1(24) DATA2(0)
 RECEIVE    | ENDPOINT(TouchOSC) TYPE(NOTE_ON) CHANNEL(2) DATA1(25) DATA2(127)
 RECEIVE    | ENDPOINT(TouchOSC) TYPE(NOTE_ON) CHANNEL(2) DATA1(25) DATA2(0)
+
+
+## Detect Bonjour Services
+
+``````bash
+dns-sd -B _osc._udp
+```
+
+In a second step you can find out more information on the given instance using
+
+```bash
+dns-sd -L "My-iPhone" _osc._tcp local
+```

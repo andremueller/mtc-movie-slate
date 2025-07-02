@@ -211,7 +211,7 @@ class OSCSenderApp(tk.Tk):
         """The core discovery logic that runs in a background thread."""
         zeroconf = Zeroconf()
         listener = TouchOSCListener()
-        browser = ServiceBrowser(zeroconf, "_osc._tcp.local.", listener)
+        browser = ServiceBrowser(zeroconf, "_osc._udp.local.", listener)
         
         # Wait for a few seconds to find services
         time.sleep(3)
