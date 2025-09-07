@@ -1,4 +1,7 @@
-
+.PHONY: app
+app:
+	cd mtc-remote-control && pyinstaller --name 'MTC Remote Control' \
+		--windowed src/mtc_remote_control/main.py
 
 .PHONY: remote
 remote:
