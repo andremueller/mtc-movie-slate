@@ -77,7 +77,7 @@ class OSCSenderApp(tk.Tk):
 
         # --- Window Configuration ---
         self.title("OSC Take Sender")
-        self.geometry("450x450")  # Set a default size
+        self.geometry("450x580")  # Set a default size
         self.resizable(True, True)
 
         # --- Style Configuration ---
@@ -184,6 +184,40 @@ class OSCSenderApp(tk.Tk):
         reset_button = ttk.Button(take_frame, text="Reset", command=self.reset_take)
         reset_button.pack(side=tk.LEFT, padx=5, fill=tk.X)
 
+        # --- Recording Light Test Section ---
+        light_frame = ttk.LabelFrame(
+            main_frame, text="Recording Light Test", padding="10"
+        )
+        light_frame.pack(fill=tk.X, pady=10)
+
+        # Bridge target config
+        bridge_row = ttk.Frame(light_frame)
+        bridge_row.pack(fill=tk.X, pady=(0, 8))
+        ttk.Label(bridge_row, text="Bridge:").pack(side=tk.LEFT)
+        self.bridge_host_var = tk.StringVar(value="127.0.0.1")
+        ttk.Entry(bridge_row, textvariable=self.bridge_host_var, width=15).pack(side=tk.LEFT, padx=5)
+        ttk.Label(bridge_row, text=":").pack(side=tk.LEFT)
+        self.bridge_port_var = tk.StringVar(value="9000")
+        ttk.Entry(bridge_row, textvariable=self.bridge_port_var, width=6).pack(side=tk.LEFT, padx=(0, 5))
+
+        self.light_client = None
+
+        # Buttons
+        btn_row = ttk.Frame(light_frame)
+        btn_row.pack(fill=tk.X)
+
+        ttk.Button(
+            btn_row, text="OFF", command=lambda: self.send_recording_light(0)
+        ).pack(side=tk.LEFT, expand=True, fill=tk.X, padx=(0, 4))
+
+        ttk.Button(
+            btn_row, text="ARMED", command=lambda: self.send_recording_light(2)
+        ).pack(side=tk.LEFT, expand=True, fill=tk.X, padx=4)
+
+        ttk.Button(
+            btn_row, text="RECORDING", command=lambda: self.send_recording_light(1)
+        ).pack(side=tk.LEFT, expand=True, fill=tk.X, padx=(4, 0))
+
         # --- Action Button ---
         send_button = ttk.Button(
             main_frame, text="Send OSC Message", command=self.send_osc_message
@@ -281,6 +315,28 @@ class OSCSenderApp(tk.Tk):
     def reset_take(self):
         """Resets the take number to 1."""
         self.take_var.set(1)
+
+    def send_recording_light(self, mode: int):
+        """Send recording light command directly to bridge.py.
+        
+        mode: 0=off, 1=recording(on), 2=armed(blink)
+        """
+        host = self.bridge_host_var.get()
+        try:
+            port = int(self.bridge_port_var.get())
+        except ValueError:
+            self.status_var.set("Error: Invalid bridge port")
+            return
+
+        labels = {0: "OFF", 1: "RECORDING", 2: "ARMED"}
+        try:
+            client = udp_client.SimpleUDPClient(host, port)
+            client.send_message("/recording/light/set", mode)
+            msg = f"Light → {labels.get(mode, mode)} ({host}:{port})"
+            print(msg)
+            self.status_var.set(msg)
+        except Exception as e:
+            self.status_var.set(f"Light error: {e}")
 
     def send_osc_message(self):
         """
