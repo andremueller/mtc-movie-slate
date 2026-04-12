@@ -5,7 +5,7 @@ app:
 
 .PHONY: remote
 remote:
-	cd mtc-remote-control && poetry run python src/mtc_remote_control/main.py
+	cd mtc-remote-control && ./start.sh
 
 .PHONY: run
 run:
