@@ -1,36 +1,46 @@
 # MTC Remote Control
 
-Python/Tkinter GUI zum Eingeben von Produktions-Metadaten (Künstler, Produktion, Take),
-die per OSC an die TouchOSC MTC Movie Slate App gesendet werden.
+Python/Tkinter GUI for entering production metadata (artist, production, take),
+sent via OSC to the TouchOSC MTC Movie Slate app.
 
-Die GUI bietet Texteingabefelder, die in TouchOSC auf dem iPad/iPhone
-schwierig umzusetzen sind.
+The GUI provides text input fields that are difficult to implement in TouchOSC
+on iPad/iPhone.
 
-## Starten
+## Getting Started
 
 ```bash
 ./start.sh
 ```
 
-Das Script erstellt automatisch ein venv mit Python 3.13 (benötigt tkinter)
-und installiert die Abhängigkeiten.
+The script automatically creates a venv with Python 3.13 (requires tkinter)
+and installs dependencies.
 
-Oder über das Makefile im übergeordneten Verzeichnis:
+Or via the Makefile in the parent directory:
 
 ```bash
 make remote
 ```
 
-## Abhängigkeiten
+## Dependencies
 
-- Python 3.13 (Homebrew: `python@3.13` — tkinter ist in Python 3.14 nicht enthalten)
+- Python 3.13 (Homebrew: `python@3.13` — tkinter is not available in Python 3.14)
 - `python-osc`
 - `zeroconf`
 
 ## Usage
 
-1. Starten → automatische Bonjour-Discovery von TouchOSC Geräten
-2. Oder manuell IP/Port des TouchOSC-Geräts eingeben
-3. Künstler, Produktion, Take eingeben
-4. Werte werden per OSC (`/production/name`, `/production/part`, `/production/take`)
-   an TouchOSC gesendet
+1. Start → automatic Bonjour discovery of TouchOSC devices
+2. Or manually enter the TouchOSC device IP/port
+3. Enter artist, production, take
+4. Values are sent via OSC (`/production/name`, `/production/part`, `/production/take`)
+   to TouchOSC
+
+## Recording Light Test
+
+The GUI includes buttons to test the recording light without Logic Pro:
+
+- **OFF** — turn light off
+- **ARMED** — light blinks
+- **RECORDING** — light on (steady)
+
+These send OSC directly to `bridge.py` on port 9000.
