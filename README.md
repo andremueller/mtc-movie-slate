@@ -8,6 +8,18 @@ TouchOSC Mk2 layout with MIDI Timecode display and Recording Light integration.
 - **Recording Light** — Detects recording state via MIDI Notes and shows visual feedback
 - **OSC Bridge** — Sends recording state via OSC to external bridge (for Shelly/recording light control)
 
+## Prerequisites
+
+- Logic Pro
+- [TouchOSC Bridge](https://hexler.net/touchosc/bridge-releases)
+- [TouchOSC](https://hexler.net/touchosc/releases)
+
+## Setup Logic Pro for transmitting MTC
+
+The timecode display will only work, if it is transferred to the TouchOSC Bridge. If you want to use the stop, recording, start buttons within the TouchOSC UI you need to activate MIDI Machine Control (MMC).
+
+![image-20260412101733677](README.assets/image-20260412101733677.png)
+
 ## MIDI Notes (from Logic Pro Recording Light)
 
 | Note | Vel | Meaning |
